@@ -5,8 +5,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,12 +20,16 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends AppCompatActivity {
+
+    static ArrayList<String> llista;
+    static ArrayAdapter<String> adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +38,28 @@ public class MainActivity extends AppCompatActivity {
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler handler = new Handler(Looper.getMainLooper());
+        llista = new ArrayList<>();
+
+        adapter = new ArrayAdapter<String>( this, R.layout.layout, llista )
+        {
+            @Override
+            public View getView(int pos, View convertView, ViewGroup container)
+            {
+                // getView ens construeix el layout i hi "pinta" els valors de l'element en la posició pos
+                if( convertView==null ) {
+                    // inicialitzem l'element la View amb el seu layout
+                    convertView = getLayoutInflater().inflate(R.layout.layout, container, false);
+                }
+                // "Pintem" valors (també quan es refresca)
+                ((TextView) convertView.findViewById(R.id.textView)).setText(getItem(pos));
+
+                return convertView;
+            }
+
+        };
+
+        ListView lv = (ListView) findViewById(R.id.lista);
+        lv.setAdapter(adapter);
 
         Button b1 = (Button) findViewById(R.id.button);
         b1.setOnClickListener(new View.OnClickListener() {
@@ -38,13 +69,18 @@ public class MainActivity extends AppCompatActivity {
                 executor.execute(new Runnable() {
                     @Override
                     public void run() {
-                        getDataFromUrl("https://api.myapi.com");
+                        String res = getDataFromUrl("https://api.myip.com");
+                        Log.i("MYAPP",res);
                         //Background work here
 
                         handler.post(new Runnable() {
                             @Override
                             public void run() {
                                 //UI Thread work here
+                                llista.add(res);
+                                adapter.notifyDataSetChanged();
+
+
                             }
                         });
                     }
